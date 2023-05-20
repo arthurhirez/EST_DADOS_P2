@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h> // funções strcmp e strcpy
-#include <math.h>
-
+#include "Lista.h"
 // Definição das variaveis que controlam a medição de tempo
 clock_t _ini, _fim;
 
@@ -12,11 +7,10 @@ typedef unsigned char bool;
 #define TRUE  1
 #define FALSE 0
 
-// Definição do tipo string
-typedef char *string;
 
 typedef struct{
-    string *data_array;
+    LISTA **data_array;
+    unsigned size;
 } hashT;
 
 #define MAX_STRING_LEN 20
@@ -24,14 +18,19 @@ typedef struct{
 
 hashT create_table(unsigned size){
     hashT table;
-    table.data_array = malloc(size*sizeof(string));
+
+    table.data_array = (LISTA**)malloc(size*sizeof(LISTA*));
     for(int i = 0; i < size; i++){
         table.data_array[i] = NULL;
     }
+    table.size = size;
     return table;
 }
 
 void delete_table(hashT *table){
+    for(int i = 0; i < table->size; i++){
+        delete_list(&(table->data_array[i]));
+    }
     free(table->data_array);
 }
 
@@ -50,8 +49,7 @@ unsigned converter(string s) {
    return h;
 }
 
-string* ler_strings(const char * arquivo, const int n)
-{
+string* ler_strings(const char * arquivo, const int n){
     FILE* f = fopen(arquivo, "r");
     
     string* strings = (string *) malloc(sizeof(string) * n);
@@ -88,13 +86,15 @@ int insert_hash_div(hashT *table, string element, unsigned size, unsigned *n_col
     for(unsigned i = 0; i < size; i++){
         unsigned key_hash = h_div(key, i, size);
         printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-
-        if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
-            table->data_array[key_hash] = element;
-            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
-            return 0;
+        if(table->data_array[key_hash] == NULL){
+            table->data_array[key_hash] = new_list();
+        }else{
+            (*n_colision)++;
         }
-        (*n_colision)++;
+        insert_node(table->data_array[key_hash], element);
+        // show_list(table->data_array[key_hash]);
+        
+        return 0;
     }
     return 1;
 }
@@ -105,13 +105,14 @@ int search_hash_div(hashT *table, string element, unsigned size, unsigned *n_fou
     for(unsigned i = 0; i < size; i++){
         unsigned key_hash = h_div(key, i, size);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        if(table->data_array[key_hash] == NULL){
+        LISTA *curr_list = table->data_array[key_hash];
+        if(curr_list == NULL){
             // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
             return -1;
         }
 
-        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+        if((search_list(curr_list, element) == 0)){
+            printf("O elemento %s foi encontrado com sucesso!!!\n", element);
             (*n_found)++;
             return 0;
         }
@@ -134,13 +135,15 @@ int insert_hash_mul(hashT *table, string element, unsigned size, unsigned *n_col
     for(unsigned i = 0; i < size; i++){
         unsigned key_hash = h_mul(key, i, size);
         printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-
-        if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
-            table->data_array[key_hash] = element;
-            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
-            return 0;
+        if(table->data_array[key_hash] == NULL){
+            table->data_array[key_hash] = new_list();
+        }else{
+            (*n_colision)++;
         }
-        (*n_colision)++;
+        insert_node(table->data_array[key_hash], element);
+        // show_list(table->data_array[key_hash]);
+        
+        return 0;
     }
     return 1;
 }
@@ -151,13 +154,14 @@ int search_hash_mul(hashT *table, string element, unsigned size, unsigned *n_fou
     for(unsigned i = 0; i < size; i++){
         unsigned key_hash = h_mul(key, i, size);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        if(table->data_array[key_hash] == NULL){
+        LISTA *curr_list = table->data_array[key_hash];
+        if(curr_list == NULL){
             // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
             return -1;
         }
 
-        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+        if((search_list(curr_list, element) == 0)){
+            printf("O elemento %s foi encontrado com sucesso!!!\n", element);
             (*n_found)++;
             return 0;
         }
@@ -166,14 +170,18 @@ int search_hash_mul(hashT *table, string element, unsigned size, unsigned *n_fou
     return 1;
 }
 
+unsigned rehash(unsigned x, unsigned i, unsigned B){
+    return (h_mul(x, i, B) + (i*h_div(x, i, B))) % B;
+}
+
+
 /*
 causality x2
 freed x2
 eatable x1
 */
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]){
 
     unsigned N = 10;
     unsigned M = 20;
@@ -198,6 +206,16 @@ int main(int argc, char const *argv[])
     hashT table;
     table = create_table(B);
 
+    // LISTA *str_list;
+    // str_list = new_list();
+
+    // insert_node(str_list, consultas[0]);
+
+    // show_list(str_list);
+
+    // delete_list(&str_list);
+
+    // show_list(str_list);
     // for (size_t i = 0; i < 10; i++){
     //     printf("%s\n", insercoes[i]);
     // }
@@ -258,5 +276,8 @@ int main(int argc, char const *argv[])
     printf("Tempo de busca      : %fs\n", tempo_busca_h_mul);
     printf("Itens encontrados   : %d\n", encontrados_h_mul);
 
+
+
     return 0;
+
 }

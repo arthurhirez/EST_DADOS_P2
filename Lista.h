@@ -2,38 +2,28 @@
 #ifndef LISTA_H
 #define LISTA_H
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+#include <string.h> // funções strcmp e strcpy
 #include <math.h>
 
-#define TAM_MIN (pow(10,1))
-#define TAM_MAX (pow(10,8))
-#define REP (10)
+typedef char *string;
 
-typedef struct list_elem LIST;
-typedef long elem;
+typedef struct node_st NODE;
+typedef struct lista_st LISTA;
 
-// Getters atributos lista
-elem *get_array(LIST *list);
-elem get_max(LIST *list);
-long get_size(LIST *list);
+int get_size(LISTA *list);
 
-// Cria e deleta lista
-LIST* create_list(int range_index);
-void delete_list(LIST **list);
+LISTA *new_list();
+void delete_list(LISTA **list);
 
-// Preenche lista
-void fill_rnd(long range, LIST *list);
-void fill_ascend(long range, LIST *list);
-void fill_descend(long range, LIST *list);
+NODE *new_node(string element);
 
-// Imprime lista
-void print_head_tail(LIST *list);
-void print_list(LIST *list);
+void insert_node(LISTA *list, string element);
 
-// Auxiliares
-int check_ord(LIST *list, long nElem);
-int return_exponent(long size);
-int empty_list(LIST *list);
+void show_list(LISTA *list);
+
+int search_list(LISTA *list, string target);
+
 #endif
