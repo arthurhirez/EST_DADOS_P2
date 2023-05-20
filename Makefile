@@ -1,4 +1,4 @@
-UTIL = Lista.c 
+UTIL = 
 MAIN = main.c
 BINARY = bin_proj
 
