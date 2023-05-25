@@ -4,6 +4,12 @@ BINARY = bin_proj
 
 all:
 	gcc -Wall -Werror -g $(UTIL) $(MAIN) -o $(BINARY) -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio2a.c -o bin2a -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio2b.c -o bin2b -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio2c.c -o bin2c -lm
+
+main:
+	gcc -Wall -Werror -g $(UTIL) $(MAIN) -o $(BINARY) -lm
 
 optim:
 	gcc -Wall -Werror -g -O3 $(UTIL) $(MAIN) -o $(BINARY) -lm

@@ -9,7 +9,6 @@
 #include <math.h>
 
 typedef char *string;
-
 typedef struct node_st NODE;
 typedef struct lista_st LISTA;
 
@@ -17,11 +16,9 @@ LISTA *new_list();
 void delete_list(LISTA **list);
 
 NODE *new_node(string element);
-
 void insert_node(LISTA *list, string element);
 
-void show_list(LISTA *list);
-
 int search_list(LISTA *list, string target);
+void show_list(LISTA *list);
 
 #endif

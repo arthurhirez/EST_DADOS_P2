@@ -6,7 +6,8 @@ freed x2
 eatable x1
 */
 
-int main(int argc, char const *argv[]){
+int main(int argc, char const *argv[])
+{
 
     unsigned N = 10;
     unsigned M = 20;
@@ -28,19 +29,9 @@ int main(int argc, char const *argv[]){
     // string* consultas = ler_strings("strings_busca.txt", M);
 
     // cria tabela hash com hash por divisão
-    HASH_AB *table;
+    HASH_FC *table;
     table = create_table(B);
 
-    // LISTA *str_list;
-    // str_list = new_list();
-
-    // insert_node(str_list, consultas[0]);
-
-    // show_list(str_list);
-
-    // delete_list(&str_list);
-
-    // show_list(str_list);
     // for (size_t i = 0; i < 10; i++){
     //     printf("%s\n", insercoes[i]);
     // }
@@ -62,7 +53,6 @@ int main(int argc, char const *argv[]){
     double tempo_busca_h_div = finaliza_tempo();
 
     // limpa a tabela hash com hash por divisão
-
     delete_table(&table);
     
     table = create_table(B);
@@ -101,8 +91,5 @@ int main(int argc, char const *argv[]){
     printf("Tempo de busca      : %fs\n", tempo_busca_h_mul);
     printf("Itens encontrados   : %d\n", encontrados_h_mul);
 
-
-
     return 0;
-
 }

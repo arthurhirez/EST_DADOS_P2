@@ -1,20 +1,43 @@
 #include "Tools.h"
 
-// Definição da struct com vetor de ponteiros para lista e contador de elementos
+// Definição da struct para HASH ABERTO com vetor de ponteiros para lista
 struct hash_st_open{
     LISTA **data_array;
     unsigned size;
 };
 
+// Definição da struct para HASH FECHADO com vetor de strings
+struct hash_st_closed{
+    string *data_array;
+};
 
 /****************************************************************************/
 /* Funcoes de inicializacao e alocação/desalocação de memória */
 
-// Inicializar tabela hash
-HASH_AB *create_table(unsigned size){
-    HASH_AB *table;
-    table = malloc(sizeof(HASH_AB));
+// Inicializar tabela hash - FECHADO
+HASH_FC *create_table(unsigned size){
+    HASH_FC *table;
+    table = (HASH_FC*)malloc(sizeof(HASH_FC));
 
+    
+    table->data_array = malloc(size*sizeof(string));
+    for(int i = 0; i < size; i++){
+        table->data_array[i] = NULL;
+    }
+    return table;
+}
+
+// Liberar memória alocada dinamicamente - HASH FECHADO
+void delete_table(HASH_FC **table){
+    free((*table)->data_array);
+    free(*table);
+}
+
+
+// Inicializar tabela hash - ABERTO
+HASH_AB *create_table_open(unsigned size){
+    HASH_AB *table;
+    table = (HASH_AB*)malloc(sizeof(HASH_AB));
     
     // Alocar memoria & Inicializar ponteiros de lista como NULL
     table->data_array = (LISTA**)malloc(size*sizeof(LISTA*));
@@ -26,8 +49,8 @@ HASH_AB *create_table(unsigned size){
     return table;
 }
 
-// Liberar memória alocada dinamicamente - Tabela Hash
-void delete_table(HASH_AB **table){
+// Liberar memória alocada dinamicamente - HASH ABERTO
+void delete_table_open(HASH_AB **table){
     for(int i = 0; i < (*table)->size; i++){
         delete_list(&((*table)->data_array[i]));
     }
@@ -92,7 +115,47 @@ unsigned h_div(unsigned x, unsigned i, unsigned B){
     return ((x % B) + i) % B;
 }
 
-int insert_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
+// Inserir - Hash FECHADO
+int insert_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+    unsigned key = converter(element);
+
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = h_div(key, i, size);
+        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+
+        if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
+            table->data_array[key_hash] = element;
+            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            return 0;
+        }
+        (*n_colision)++;
+    }
+    return 1;
+}
+
+// Buscar - Hash FECHADO
+int search_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+    unsigned key = converter(element);
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = h_div(key, i, size);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+        if(table->data_array[key_hash] == NULL){
+            // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+            return -1;
+        }
+
+        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
+            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+            (*n_found)++;
+            return 0;
+        }
+        
+    }
+    return 1;
+}
+
+// Inserir - Hash ABERTO
+int insert_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_div(key, 0, size);
     printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
@@ -109,8 +172,8 @@ int insert_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_c
     return 0;
 }
 
-
-int search_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_found){
+// Buscar - Hash ABERTO
+int search_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_found){
     unsigned key = converter(element);
     unsigned key_hash = h_div(key, 0, size);
     printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
@@ -132,12 +195,54 @@ int search_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_f
 /****************************************************************************/
 /* Funcoes Hash -> Multiplicação */
 
+// Funcao Hash - Multiplicação
 unsigned h_mul(unsigned x, unsigned i, unsigned B){
     const double A = 0.6180;
     return  ((int) ((fmod(x * A, 1) * B) + i)) % B;
 }
 
-int insert_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
+
+// Inserir - Hash FECHADO
+int insert_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+    unsigned key = converter(element);
+
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = h_mul(key, i, size);
+        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+
+        if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
+            table->data_array[key_hash] = element;
+            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            return 0;
+        }
+        (*n_colision)++;
+    }
+    return 1;
+}
+
+// Buscar - Hash FECHADO
+int search_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+    unsigned key = converter(element);
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = h_mul(key, i, size);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+        if(table->data_array[key_hash] == NULL){
+            // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+            return -1;
+        }
+
+        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
+            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+            (*n_found)++;
+            return 0;
+        }
+        
+    }
+    return 1;
+}
+
+// Inserir - Hash ABERTO
+int insert_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_mul(key, 0, size); // i = 0 -> uso de listas dispensa overflow
     printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
@@ -154,8 +259,8 @@ int insert_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_c
 
 }
 
-
-int search_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_found){
+// Buscar - Hash ABERTO
+int search_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_found){
     unsigned key = converter(element);
     unsigned key_hash = h_mul(key, 0, size);
     printf("\t%20s\t=\t%d -> %d\n",element, key, key_hash);
@@ -176,6 +281,49 @@ int search_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_f
 }
 
 
+/****************************************************************************/
+/* Funcoes Hash -> Rehash */
 
+// Funcao Hash - Rehash
+unsigned rehash(unsigned x, unsigned i, unsigned B){
+    return (h_mul(x, i, B) + (i*h_div(x, i, B))) % B;
+}
 
+// Inserir - Rehash
+int insert_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+    unsigned key = converter(element);
 
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = rehash(key, i, size);
+        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+
+        if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
+            table->data_array[key_hash] = element;
+            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            return 0;
+        }
+        (*n_colision)++;
+    }
+    return 1;
+}
+
+// Buscar - Rehash
+int search_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+    unsigned key = converter(element);
+    for(unsigned i = 0; i < size; i++){
+        unsigned key_hash = rehash(key, i, size);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+        if(table->data_array[key_hash] == NULL){
+            // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+            return -1;
+        }
+
+        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
+            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+            (*n_found)++;
+            return 0;
+        }
+        
+    }
+    return 1;
+}

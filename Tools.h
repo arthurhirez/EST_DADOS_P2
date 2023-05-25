@@ -13,23 +13,36 @@ typedef unsigned char bool;
 #define FALSE 0
 #define MAX_STRING_LEN 20
 
-
+typedef struct hash_st_closed HASH_FC;
 typedef struct hash_st_open HASH_AB;
 
-HASH_AB *create_table(unsigned size);
-void delete_table(HASH_AB **table);
-void delete_strings(string **input_array, unsigned size);
+
+HASH_FC *create_table(unsigned size);
+void delete_table(HASH_FC **table);
+
+HASH_AB *create_table_open(unsigned size);
+void delete_table_open(HASH_AB **table);
 
 string* ler_strings(const char * arquivo, const int n);
+void delete_strings(string **input_array, unsigned size);
+
 void inicia_tempo();
 double finaliza_tempo();
 
-int insert_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_colision);
-int search_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_found);
+int insert_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_colision);
+int search_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_found);
 
-int insert_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_colision);
-int search_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_found);
+int insert_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_colision);
+int search_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_found);
 
+int insert_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_colision);
+int search_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_found);
+
+int insert_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision);
+int search_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_found);
+
+int insert_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision);
+int search_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_found);
 
 
 #endif
