@@ -1,191 +1,179 @@
 #include "Tools.h"
-/* Arthur Hiratsuka Rezende - 13687108 */
 
-/****************************************************************************/
-/* Funcoes de Auxiliares */
-
-/* Funcao auxiliar de trocar elementos */
-void swap(elem *elem_a, elem *elem_b){
-    elem aux = *elem_a;
-    *elem_a = *elem_b;
-    *elem_b = aux;
-}
-
-void checkpoint(int numero){
-    printf("CHECKPOINT!![%d]\n", numero);
-}
+// Definição da struct com vetor de ponteiros para lista e contador de elementos
+struct hash_st_open{
+    LISTA **data_array;
+    unsigned size;
+};
 
 
 /****************************************************************************/
-/* Bubble Sort */
-void bubbleSort(LIST *list){
-    long nElem = get_size(list);
-    elem *array_elem = get_array(list);
-    // printf("Algoritmo examinado:\tBubble_Sort");
-    for(long i = 0; i < nElem; i++){
-        for(long j = 0; j < nElem - i - 1; j++){
-            if(array_elem[j] > array_elem[j + 1]){
-                swap(&(array_elem[j]), &(array_elem[j+1]));
-            }
-        }
-    }
-}
+/* Funcoes de inicializacao e alocação/desalocação de memória */
 
+// Inicializar tabela hash
+HASH_AB *create_table(unsigned size){
+    HASH_AB *table;
+    table = malloc(sizeof(HASH_AB));
 
-/* Bubble Sort Otimizada*/
-void optimized_BubbleSort(LIST *list){
-    long nElem = get_size(list);
-    elem *array_elem = get_array(list);
-    // printf("Algoritmo examinado:\tBubble_Sort_Optm");
-    int flag_ord = 1;
-    for(long i = 0; i < nElem; i++){
-        for(long j = 0; j < nElem - i - 1; j++){
-            if(array_elem[j] > array_elem[j + 1]){
-                flag_ord = 0;
-                swap(&(array_elem[j]), &(array_elem[j+1]));
-            }
-        }
-        if (flag_ord == 1) break;
-    }
-}
-
-/****************************************************************************/
-/* Quicksort */
-/* Funcao auxiliar de ordenacao (Quicksort) */
-int partition(elem *list, long start, long end){
-    elem pivot = list[end];
-    long i = start - 1;
-
-    // Elementos menores que o pivo ficam na parte esquerda do vetor
-    // Elementos maiores que o pivo ficam na parte direita do vetor
-    for(long j = start; j < end; j++){
-        if(list[j] < pivot){
-            i +=1;
-            swap(&list[i], &list[j]);
-        }
-    }
-    // Coloca o pivo no indice correto no vetor e retorna o indice
-    swap(&list[i + 1], &list[end]);
-    return (i + 1);
-}
-
-/* Funcao auxiliar de escolha do pivo (Quicksort) */
-int random_partition(elem *list, long start, long end){
-    // Define um pivo aleatoriamente e o coloca no fim do vetor
-    elem k = (rand() % (end + 1 - start)) + start;
-    swap(&list[k], &list[end]);
-
-    // Chama funcao auxiliar de ordenacao e retorna a posicao do pivo
-    return partition(list, start, end);
-}
-
-/* Chamada Quick Sort */
-void quickSort(LIST *list, long start, long end){
-    elem *array_elem = get_array(list);
-    // printf("Algoritmo examinado:\tQuick_Sort");
-    if(start < end){
-        long pivot = random_partition(array_elem, start, end);
-        quickSort(list, start, pivot - 1);
-        quickSort(list, pivot + 1, end);
-    }
-}
-
-/****************************************************************************/
-/* RadixSort */
-
-/* Funcao auxiliar de ordenacao baseado em digitos (RadixSort) */
-// A funcao ordena com base na distribuicao de quantos elementos tem tal digito
-void counting_Sort(LIST *list, long nElem, long aux_index){
-    elem *array_digits = NULL;
-    elem *array_final = NULL;
-    elem *array_elem = get_array(list);
-
-    /* Analise de digitos */
-    array_digits = (elem*)calloc(10, sizeof(elem));  
-    for(long i = 0; i < nElem; i++){
-        elem key = (array_elem[i] / aux_index) % 10;
-        array_digits[(long)key] += 1;
-    }
-
-    /* Representa distribuicao acumulada dos digitos */
-    for(int i = 1; i < 10; i++){
-        array_digits[i] += array_digits[i - 1];
-    }
-
-    /* Ordenação */
-    array_final = (elem*)malloc(nElem * sizeof(elem));
-    for(long i = nElem - 1; i >= 0; i--){
-        elem key = (long)((array_elem[i] / aux_index) % 10);
-        array_digits[key] -= 1;
-        array_final[array_digits[key]] = array_elem[i];
-    }
-
-    for(long i = 0; i <= nElem - 1; i++){
-        array_elem[i] = array_final[i];
-    }
-
-    free(array_digits);
-    free(array_final);
-
-}
-
-/* Chamada Radix Sort */
-void radixSort(LIST *list){
-    // printf("Algoritmo examinado:\tRadix_Sort");
-    long nElem = get_size(list);
-    elem elem_max = get_max(list);
-
-    int aux_index = 1;
-    while((elem_max/aux_index) > 0){
-        counting_Sort(list, nElem, aux_index);
-        aux_index *= 10;
-    }
-}
-
-/****************************************************************************/
-/* HeapSort */
-
-/* Funcao auxiliar de ordenacao (HeapSort) */
-void heapfy(LIST *list, long nElem, long i){
-    elem *array_elem = get_array(list);
-    int maior = i;
-    int esquerda = (2 * i) + 1;
-    int direita = (2 * i) + 2;
     
-    if((esquerda < nElem) && (array_elem[esquerda] > (array_elem[maior])))
-        maior = esquerda;
-    
-    if((direita < nElem) && (array_elem[direita] > array_elem[maior]))
-        maior = direita;
-    
-    // Caso um dos filhos seja maior que o pai realiza a troca e confere
-    // se o filho tem filhos menores
-    if(maior != i){
-        swap(&(array_elem[i]), &(array_elem[maior]));
-        heapfy(list, nElem, maior);
+    // Alocar memoria & Inicializar ponteiros de lista como NULL
+    table->data_array = (LISTA**)malloc(size*sizeof(LISTA*));
+    for(int i = 0; i < size; i++){
+        table->data_array[i] = NULL;
     }
+    table->size = size;
+
+    return table;
 }
 
-/* Chamada Heap Sort */
-void heapSort(LIST *list){
-    long nElem = get_size(list);
-    elem *array_elem = get_array(list);
-    // printf("Algoritmo examinado:\tHeap_Sort");
-    // Aplica heapfy nos pais
-    for(long i = (nElem / 2) - 1; i >= 0; i--){
-        heapfy(list, nElem, i);
+// Liberar memória alocada dinamicamente - Tabela Hash
+void delete_table(HASH_AB **table){
+    for(int i = 0; i < (*table)->size; i++){
+        delete_list(&((*table)->data_array[i]));
+    }
+    free((*table)->data_array);
+    free(*table);
+}
+
+// Liberar memória alocada dinamicamente - Strings inseridas/buscadas
+void delete_strings(string **input_array, unsigned size){
+    for(int i = 0; i < size; i++){
+        free((*input_array)[i]);
+    }
+    free((*input_array));
+}
+
+/****************************************************************************/
+/* Funcoes auxiliares de leitura/manipulação de strings */
+
+// Converter string em inteiro
+unsigned converter(string s) {
+   unsigned h = 0;
+   for (int i = 0; s[i] != '\0'; i++) 
+      h = h * 256 + s[i];
+   return h;
+}
+
+// Ler strings de arquivos
+string* ler_strings(const char * arquivo, const int n){
+    FILE* f = fopen(arquivo, "r");
+    string* strings = (string *) malloc(sizeof(string) * n);
+
+    for (int i = 0; !feof(f); i++) {
+        strings[i] = (string) malloc(sizeof(char) * MAX_STRING_LEN);
+        fscanf(f, "%s\n", strings[i]);
     }
 
-    // Ordena os valores (valores maiores para o fim do vetor)
-    for(long i = nElem - 1; i >= 1; i--){
-        swap(&(array_elem[0]), &(array_elem[i]));
-        heapfy(list, i, 0);
-    }
+    fclose(f);
+    return strings;
+}
+
+/****************************************************************************/
+/* Funcoes auxiliares de mediação de tempo */
+
+// Funcao de medir tempo - inicializar
+void inicia_tempo(){
+    srand(time(NULL));
+    _ini = clock();
+}
+
+// Funcao de medir tempo - finalizar
+double finaliza_tempo(){
+    _fim = clock();
+    return ((double) (_fim - _ini)) / CLOCKS_PER_SEC;
 }
 
 
+/****************************************************************************/
+/* Funcoes Hash -> Divisao */
+
+// Funcao Hash - Divisao
+unsigned h_div(unsigned x, unsigned i, unsigned B){
+    return ((x % B) + i) % B;
+}
+
+int insert_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
+    unsigned key = converter(element);
+    unsigned key_hash = h_div(key, 0, size);
+    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+
+    if(table->data_array[key_hash] == NULL){
+        table->data_array[key_hash] = new_list();
+    }else{
+        (*n_colision)++;
+    }
+
+    insert_node(table->data_array[key_hash], element);
+    // show_list(table->data_array[key_hash]);
+    
+    return 0;
+}
 
 
+int search_hash_div(HASH_AB *table, string element, unsigned size, unsigned *n_found){
+    unsigned key = converter(element);
+    unsigned key_hash = h_div(key, 0, size);
+    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+
+    LISTA *curr_list = table->data_array[key_hash];
+    if(curr_list == NULL){
+        printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+        return -1;
+    }
+
+    if((search_list(curr_list, element) == 0)){
+        printf("O elemento %s foi encontrado com sucesso!!!\n", element);
+        (*n_found)++;
+        return 0;
+    }
+    return 1;
+}
+
+/****************************************************************************/
+/* Funcoes Hash -> Multiplicação */
+
+unsigned h_mul(unsigned x, unsigned i, unsigned B){
+    const double A = 0.6180;
+    return  ((int) ((fmod(x * A, 1) * B) + i)) % B;
+}
+
+int insert_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
+    unsigned key = converter(element);
+    unsigned key_hash = h_mul(key, 0, size); // i = 0 -> uso de listas dispensa overflow
+    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+
+    if(table->data_array[key_hash] == NULL){
+        table->data_array[key_hash] = new_list();
+    }else{
+        (*n_colision)++;
+    }
+    insert_node(table->data_array[key_hash], element);
+    // show_list(table->data_array[key_hash]);
+    
+    return 0;
+
+}
+
+
+int search_hash_mul(HASH_AB *table, string element, unsigned size, unsigned *n_found){
+    unsigned key = converter(element);
+    unsigned key_hash = h_mul(key, 0, size);
+    printf("\t%20s\t=\t%d -> %d\n",element, key, key_hash);
+
+    LISTA *curr_list = table->data_array[key_hash];
+    if(curr_list == NULL){
+        // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+        return -1;
+    }
+
+    if((search_list(curr_list, element) == 0)){
+        printf("O elemento %s foi encontrado com sucesso!!!\n", element);
+        (*n_found)++;
+        return 0;
+    }
+        
+    return 1;
+}
 
 
 

@@ -13,8 +13,6 @@ typedef char *string;
 typedef struct node_st NODE;
 typedef struct lista_st LISTA;
 
-int get_size(LISTA *list);
-
 LISTA *new_list();
 void delete_list(LISTA **list);
 

@@ -1,179 +1,4 @@
-#include "Lista.h"
-// Definição das variaveis que controlam a medição de tempo
-clock_t _ini, _fim;
-
-// Definição do tipo booleano
-typedef unsigned char bool;
-#define TRUE  1
-#define FALSE 0
-
-
-typedef struct{
-    LISTA **data_array;
-    unsigned size;
-} hashT;
-
-#define MAX_STRING_LEN 20
-
-
-hashT create_table(unsigned size){
-    hashT table;
-
-    table.data_array = (LISTA**)malloc(size*sizeof(LISTA*));
-    for(int i = 0; i < size; i++){
-        table.data_array[i] = NULL;
-    }
-    table.size = size;
-    return table;
-}
-
-void delete_table(hashT *table){
-    for(int i = 0; i < table->size; i++){
-        delete_list(&(table->data_array[i]));
-    }
-    free(table->data_array);
-}
-
-void delete_strings(string **input_array, unsigned size){
-    for(int i = 0; i < size; i++){
-        free((*input_array)[i]);
-    }
-    free((*input_array));
-}
-
-
-unsigned converter(string s) {
-   unsigned h = 0;
-   for (int i = 0; s[i] != '\0'; i++) 
-      h = h * 256 + s[i];
-   return h;
-}
-
-string* ler_strings(const char * arquivo, const int n){
-    FILE* f = fopen(arquivo, "r");
-    
-    string* strings = (string *) malloc(sizeof(string) * n);
-
-    for (int i = 0; !feof(f); i++) {
-        strings[i] = (string) malloc(sizeof(char) * MAX_STRING_LEN);
-        fscanf(f, "%s\n", strings[i]);
-    }
-
-    fclose(f);
-
-    return strings;
-}
-
-void inicia_tempo(){
-    srand(time(NULL));
-    _ini = clock();
-}
-
-double finaliza_tempo(){
-    _fim = clock();
-    return ((double) (_fim - _ini)) / CLOCKS_PER_SEC;
-}
-
-
-
-unsigned h_div(unsigned x, unsigned i, unsigned B){
-    return ((x % B) + i) % B;
-}
-
-int insert_hash_div(hashT *table, string element, unsigned size, unsigned *n_colision){
-    unsigned key = converter(element);
-
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_div(key, i, size);
-        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        if(table->data_array[key_hash] == NULL){
-            table->data_array[key_hash] = new_list();
-        }else{
-            (*n_colision)++;
-        }
-        insert_node(table->data_array[key_hash], element);
-        // show_list(table->data_array[key_hash]);
-        
-        return 0;
-    }
-    return 1;
-}
-
-
-int search_hash_div(hashT *table, string element, unsigned size, unsigned *n_found){
-    unsigned key = converter(element);
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_div(key, i, size);
-        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        LISTA *curr_list = table->data_array[key_hash];
-        if(curr_list == NULL){
-            // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
-            return -1;
-        }
-
-        if((search_list(curr_list, element) == 0)){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", element);
-            (*n_found)++;
-            return 0;
-        }
-        
-    }
-    return 1;
-}
-
-
-
-
-unsigned h_mul(unsigned x, unsigned i, unsigned B){
-    const double A = 0.6180;
-    return  ((int) ((fmod(x * A, 1) * B) + i)) % B;
-}
-
-int insert_hash_mul(hashT *table, string element, unsigned size, unsigned *n_colision){
-    unsigned key = converter(element);
-
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_mul(key, i, size);
-        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        if(table->data_array[key_hash] == NULL){
-            table->data_array[key_hash] = new_list();
-        }else{
-            (*n_colision)++;
-        }
-        insert_node(table->data_array[key_hash], element);
-        // show_list(table->data_array[key_hash]);
-        
-        return 0;
-    }
-    return 1;
-}
-
-
-int search_hash_mul(hashT *table, string element, unsigned size, unsigned *n_found){
-    unsigned key = converter(element);
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_mul(key, i, size);
-        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
-        LISTA *curr_list = table->data_array[key_hash];
-        if(curr_list == NULL){
-            // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
-            return -1;
-        }
-
-        if((search_list(curr_list, element) == 0)){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", element);
-            (*n_found)++;
-            return 0;
-        }
-        
-    }
-    return 1;
-}
-
-unsigned rehash(unsigned x, unsigned i, unsigned B){
-    return (h_mul(x, i, B) + (i*h_div(x, i, B))) % B;
-}
-
+#include "Tools.h"
 
 /*
 causality x2
@@ -203,7 +28,7 @@ int main(int argc, char const *argv[]){
     // string* consultas = ler_strings("strings_busca.txt", M);
 
     // cria tabela hash com hash por divisão
-    hashT table;
+    HASH_AB *table;
     table = create_table(B);
 
     // LISTA *str_list;
@@ -223,7 +48,7 @@ int main(int argc, char const *argv[]){
     // inserção dos dados na tabela hash usando hash por divisão
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_div(&table, insercoes[i], B, &colisoes_h_div);    
+        insert_hash_div(table, insercoes[i], B, &colisoes_h_div);    
     }
     double tempo_insercao_h_div = finaliza_tempo();
 
@@ -232,7 +57,7 @@ int main(int argc, char const *argv[]){
     // consulta dos dados na tabela hash usando hash por divisão
     inicia_tempo();
     for (int i = 0; i < M; i++) {
-        search_hash_div(&table, consultas[i], B, &encontrados_h_div);
+        search_hash_div(table, consultas[i], B, &encontrados_h_div);
     }
     double tempo_busca_h_div = finaliza_tempo();
 
@@ -246,14 +71,14 @@ int main(int argc, char const *argv[]){
     // inserção dos dados na tabela hash usando hash por multiplicação
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_mul(&table, insercoes[i], B, &colisoes_h_mul);  
+        insert_hash_mul(table, insercoes[i], B, &colisoes_h_mul);  
     }
     double tempo_insercao_h_mul = finaliza_tempo();
 
     // busca dos dados na tabela hash com hash por multiplicação
     inicia_tempo();
     for (int i = 0; i < M; i++) {
-        search_hash_mul(&table, consultas[i], B, &encontrados_h_mul);
+        search_hash_mul(table, consultas[i], B, &encontrados_h_mul);
     }
     double tempo_busca_h_mul = finaliza_tempo();
 
