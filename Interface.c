@@ -50,7 +50,7 @@ void delete_array(double ****array, int exp_MIN, int exp_MAX){
 /* Funcoes de Impressao e criacao de arquivo */
 
 /* Funcao de armazenar resultados em arquivo csv */
-void create_csv(double ***array, char *alg_name, int exp_MIN, int exp_MAX, int n_REP){
+void create_csv_open(double ***array, char *alg_name, int exp_MIN, int exp_MAX, int n_REP){
     FILE *file_p;
 
     // Nome do arquivo
@@ -478,7 +478,7 @@ void call_loop(int type_alg, int *user_pref, char *alg_name){
 
     // Imprime resultados, cria arquivo .CSV com medições e desaloca memória
     print_results(list_clock, range_low, range_high, user_pref[1]);
-    create_csv(list_clock, alg_name, range_low, range_high, user_pref[1]);
+    create_csv_open(list_clock, alg_name, range_low, range_high, user_pref[1]);
     delete_array(&list_clock, range_low, range_high);
 }
 

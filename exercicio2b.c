@@ -22,7 +22,7 @@ int main(int argc, char const *argv[]){
 
     // cria tabela hash com hash por hash duplo
     HASH_FC *table;
-    table = create_table(B);
+    table = create_table(B, N);
 
     // for (size_t i = 0; i < 10; i++){
     //     printf("%s\n", insercoes[i]);
@@ -31,16 +31,19 @@ int main(int argc, char const *argv[]){
     // inserção dos dados na tabela hash
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_rehash(table, insercoes[i], B, &colisoes);
+        insert_hash_rehash(table, insercoes[i], i, &colisoes);
     }
     double tempo_insercao = finaliza_tempo();
 
     // busca dos dados na tabela hash
     inicia_tempo();
     for (int i = 0; i < M; i++) {
-        search_hash_rehash(table, consultas[i], B, &encontrados);
+        search_hash_rehash(table, consultas[i], &encontrados);
     }
     double tempo_busca = finaliza_tempo();
+
+    show_stats(table, insercoes);
+    create_csv(table, "divisao", "rehash");
 
     // limpa a tabela hash com hash por divisão
     delete_table(&table);

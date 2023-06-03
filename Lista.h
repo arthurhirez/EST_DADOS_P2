@@ -8,6 +8,8 @@
 #include <string.h> // funções strcmp e strcpy
 #include <math.h>
 
+#define MAX_SIZE_LIST 1000 // tamanho maximo lista encadeada
+
 typedef char *string;
 typedef struct node_st NODE;
 typedef struct lista_st LISTA;
@@ -20,5 +22,6 @@ void insert_node(LISTA *list, string element);
 
 int search_list(LISTA *list, string target);
 void show_list(LISTA *list);
+int get_size(LISTA *list);
 
 #endif

@@ -8,17 +8,17 @@ eatable x1
 
 int main(int argc, char const *argv[]){
 
-    unsigned N = 10;
-    unsigned M = 20;
-    unsigned B = 20;
-    string* insercoes = ler_strings("str_entrada_teste.txt", N);
-    string* consultas = ler_strings("str_busca_teste.txt", M);
+    // unsigned N = 10;
+    // unsigned M = 20;
+    // unsigned B = 20;
+    // string* insercoes = ler_strings("str_entrada_teste.txt", N);
+    // string* consultas = ler_strings("str_busca_teste.txt", M);
 
-    // unsigned N = 50000;
-    // unsigned M = 70000;
-    // unsigned B = 150001;
-    // string* insercoes = ler_strings("strings_entrada.txt", N);
-    // string* consultas = ler_strings("strings_busca.txt", M);
+    unsigned N = 50000;
+    unsigned M = 70000;
+    unsigned B = 150001;
+    string* insercoes = ler_strings("strings_entrada.txt", N);
+    string* consultas = ler_strings("strings_busca.txt", M);
 
     unsigned colisoes_h_div = 0;
     unsigned colisoes_h_mul = 0;
@@ -53,7 +53,6 @@ int main(int argc, char const *argv[]){
     }
     double tempo_insercao_h_div = finaliza_tempo();
 
-    printf("\nBUSCA:\n");
 
     // consulta dos dados na tabela hash usando hash por divisão
     inicia_tempo();
@@ -62,8 +61,13 @@ int main(int argc, char const *argv[]){
     }
     double tempo_busca_h_div = finaliza_tempo();
 
-    // limpa a tabela hash com hash por divisão
+    int **stats_div;
+    stats_div = hash_stats_open(table);
+    printf("%d\n\n", stats_div[0][0]);
 
+    create_csv_open(stats_div, "divisao");
+    delete_stats(&stats_div);
+    // limpa a tabela hash com hash por divisão
     delete_table_open(&table);
     
     table = create_table_open(B);
@@ -83,6 +87,11 @@ int main(int argc, char const *argv[]){
     }
     double tempo_busca_h_mul = finaliza_tempo();
 
+    stats_div = hash_stats_open(table);
+        printf("%d\n\n", stats_div[0][0]);
+
+    create_csv_open(stats_div, "multiplicacao");
+    delete_stats(&stats_div);   
     // limpa a tabela hash com hash por multiplicação
     delete_table_open(&table);
 

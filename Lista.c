@@ -66,6 +66,10 @@ void insert_node(LISTA *list, string element){
         return;
     }
 
+    if(list->size == MAX_SIZE_LIST){
+        printf("LISTA CHEIA!\n");
+        return;
+    }
     NODE *curr_node = NULL;
     curr_node = list->start;
 
@@ -84,23 +88,21 @@ void insert_node(LISTA *list, string element){
 
 // Buscar elemento na lista
 int search_list(LISTA *list, string target){
-    printf("ESTOU BUSCANDO:\t\t%s\n", target);
+    // printf("ESTOU BUSCANDO:\t\t%s\n", target);
 
     if(list == NULL){
-        printf("Lista vazia!\n");
+        // printf("Lista vazia!\n");
         return -1;
     }
 
     NODE *curr_node = list->start;
     while(curr_node != NULL){
-        printf("nó atual:\t%s\n", curr_node->item);
+        // printf("nó atual:\t%s\n", curr_node->item);
         if((strcmp(curr_node->item, target) == 0)){
             return 0; //sucesso
         }
         curr_node = curr_node->next;
     }
-
-    printf("\n");
 
     return -1;
 }
@@ -131,4 +133,10 @@ void show_list(LISTA *list){
         curr_node = curr_node->next;
     }
     
+}
+
+int get_size(LISTA *list){
+    if(list == NULL) return -1;
+
+    return list->size;
 }

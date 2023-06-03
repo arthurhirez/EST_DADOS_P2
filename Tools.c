@@ -1,5 +1,6 @@
 #include "Tools.h"
 
+ 
 // Definição da struct para HASH ABERTO com vetor de ponteiros para lista
 struct hash_st_open{
     LISTA **data_array;
@@ -8,28 +9,46 @@ struct hash_st_open{
 
 // Definição da struct para HASH FECHADO com vetor de strings
 struct hash_st_closed{
-    string *data_array;
+    string *data_array; // Array dados
+    int size_hash;
+
+    int **stats_array; // Array estatisticas
+    int size_input;
 };
 
 /****************************************************************************/
 /* Funcoes de inicializacao e alocação/desalocação de memória */
 
 // Inicializar tabela hash - FECHADO
-HASH_FC *create_table(unsigned size){
+HASH_FC *create_table(unsigned size_hash, unsigned size_input){
     HASH_FC *table;
     table = (HASH_FC*)malloc(sizeof(HASH_FC));
 
-    
-    table->data_array = malloc(size*sizeof(string));
-    for(int i = 0; i < size; i++){
+    // Alocacao de memoria para o vetor tabela hash
+    table->data_array = malloc(size_hash*sizeof(string));
+    for(int i = 0; i < size_hash; i++){
         table->data_array[i] = NULL;
     }
+    table->size_hash = size_hash;
+
+    // Alocacao de memoria para o vetor de contagem de colisoes de cada elemento
+    table->stats_array = malloc(size_input * sizeof(int*));
+    for(int i = 0; i < size_input; i++){
+        table->stats_array[i] = calloc(2, sizeof(int));
+    }
+    table->size_input = size_input;
+
     return table;
 }
 
 // Liberar memória alocada dinamicamente - HASH FECHADO
 void delete_table(HASH_FC **table){
     free((*table)->data_array);
+
+    for(int i = 0; i < (*table)->size_input; i++){
+        free((*table)->stats_array[i]);
+    }
+    free((*table)->stats_array);
     free(*table);
 }
 
@@ -66,6 +85,188 @@ void delete_strings(string **input_array, unsigned size){
     free((*input_array));
 }
 
+
+void show_stats(HASH_FC *table, string *entrada){
+    int total_col = 0;
+    int maior_col = 0;
+    int maior_indice = 0;
+
+    for(int i = 0; i < table->size_input; i++){
+        if(table->stats_array[i] > 0){
+            if(table->stats_array[i][0] > maior_col){
+                maior_indice = i;
+                maior_col = table->stats_array[i][0];
+            }
+            total_col += table->stats_array[i][0];
+        }
+    }
+
+    printf("Maior numero de colisoes unico valor: [%d]\t%s\t%dx\n", maior_indice, entrada[maior_indice], maior_col);
+    printf("Total de colisoes: %d\n", total_col);
+}
+
+
+
+int **hash_stats_open(HASH_AB *table){
+    /* Vetor de estatísticas das listas */
+    // [0][0] : Maior lista - tamanho
+    // [1][0] : Maior lista - posição na tabela
+    // [2][0] : Tamanho alocado na posicao [3] do vetor
+    /* [2] -> feito por exercicio, eh dispensavel */
+    // [3][x] : Numero de listas de tamanho x - max: MAX_SIZE_LIST
+
+    int **stats;
+    stats = (int**)malloc(4 * sizeof(int*));
+
+    // Aloca memoria
+    for(int i = 0; i < 3; i++){
+        stats[i] = (int*)calloc(1, sizeof(int));
+    }
+    stats[2][0] = 128;
+    stats[3] = (int*)calloc(stats[2][0], sizeof(int));    
+    
+    // Preenche o vetor
+    for(int i = 0; i < table->size; i++){
+        // Obtem tamanho da i-esima lista
+        int list_size = get_size(table->data_array[i]);
+        
+        // Atualiza vetor se necessario
+        if(list_size > stats[0][0]){
+            // Double check para valores invalidos - checagem feita na insercao na lista
+            if(list_size >= MAX_SIZE_LIST) return NULL;
+            stats[0][0] = list_size;
+            stats[1][0] = i;
+        }
+
+        // Realoca memoria, se necessario, para a lista de tamanhos (das listas)
+        while(list_size > stats[2][0]){
+            stats[2][0] *= 2; 
+
+            // Limita o tamanho de alocacao de memoria
+            if(stats[2][0] > MAX_SIZE_LIST) stats[2][0] = MAX_SIZE_LIST;  
+            stats[3] = (int*)realloc(stats[3], stats[2][0] * sizeof(int));
+
+            // Inicializa novas posicoes com 0 (contagem)
+            for(int i = stats[2][0]/2; i < stats[2][0]; i++) stats[3][i] = 0;
+        }
+
+        // Atualiza lista de tamanhos
+        if(list_size > 0){
+            if(list_size < stats[2][0]) stats[3][list_size]++;
+        }else{
+            // Caso NULL ou lista de tamanho 0 (se houvesse remoção)
+            stats[3][0]++;
+        }
+    }
+
+
+#ifdef DEBUG
+        printf("MAIOR LISTA %d:\n", get_size(table->data_array[stats[1][0]]));
+        // show_list(table->data_array[stats[1][0]]);
+#endif
+    
+    // Controle -> deve ser igual ao total de strings lidas
+    int total_listas = 0; 
+    int colisoes = 0;
+    for(int i = 0; i <= stats[0][0]; i++){
+        if(stats[3][i] != 0){
+            printf("Listas de tamanho %d:\t%d\n", i, stats[3][i]);
+            total_listas += stats[3][i] * i;
+            if(i > 1){
+                colisoes += stats[3][i] * (i-1);
+            }
+        }
+            
+    }
+
+    printf("Total de elementos:\t%d\n", total_listas);
+    printf("Total de colisoes:\t%d\n", colisoes);
+    /* COLOCAR ENDIF AQUI!!!!!!! */
+
+    return stats;
+}
+
+
+/* Funcao de armazenar resultados em arquivo csv */
+void create_csv_open(int **array, char *alg_name){
+    FILE *file_p;
+
+    if(strcmp(alg_name, "divisao") == 0){
+        // Cria o arquivo
+        file_p = fopen("report_hash_aberto.csv", "w");
+        // fprintf(file_p, "Resultados hash por divisao");
+        if (file_p == NULL) {
+            fprintf(stderr, "\nErro ao abrir o arquivo\n");
+            exit(1);
+        }
+    }else{
+        // Abre o arquivo
+        file_p = fopen("report_hash_aberto.csv", "a");
+        // fprintf(file_p, "Resultados hash por multiplicacao");
+        if (file_p == NULL) {
+            fprintf(stderr, "\nErro ao abrir o arquivo\n");
+            exit(1);
+        }
+    }
+
+    // Escreve dados no arquivo
+    for (int j = 0; j <= array[0][0]; j++){
+        fprintf(file_p, "%d;%d;", j, array[3][j]);
+    }
+    fprintf(file_p, "\n");
+
+    // Fecha arquivo
+    fclose(file_p);
+}
+
+/* Funcao de armazenar resultados em arquivo csv */
+void create_csv(HASH_FC *table, char *alg_name, char *type_hash){
+    FILE *file_p;
+
+    // Nome do arquivo
+    char *file_suffix = "report_";
+    int aux_len = strlen(file_suffix) + strlen(type_hash) + 5;
+    char *str_aux = malloc(aux_len * sizeof(char));
+    strcpy(str_aux, file_suffix);
+    strcat(str_aux, type_hash);
+    strcat(str_aux, ".csv");
+
+    if(strcmp(alg_name, "divisao") == 0){
+        // Cria o arquivo
+        file_p = fopen(str_aux, "w");
+        // fprintf(file_p, "Resultados hash por divisao");
+        if (file_p == NULL) {
+            fprintf(stderr, "\nErro ao abrir o arquivo\n");
+            exit(1);
+        }
+    }else{
+        // Abre o arquivo
+        file_p = fopen(str_aux, "a");
+        // fprintf(file_p, "Resultados hash por multiplicacao");
+        if (file_p == NULL) {
+            fprintf(stderr, "\nErro ao abrir o arquivo\n");
+            exit(1);
+        }
+    }
+
+    // Escreve dados no arquivo
+    for (int j = 0; j < table->size_input; j++){
+        fprintf(file_p, "%d;%d\n", table->stats_array[j][0], table->stats_array[j][1]);
+    }
+
+
+    // Fecha arquivo
+    fclose(file_p);
+    free(str_aux);
+    str_aux = NULL;
+}
+
+void delete_stats(int ***array){
+    for(int i = 0; i < 4; i++){
+        free((*array)[i]);
+    }
+    free(*array);
+}
 /****************************************************************************/
 /* Funcoes auxiliares de leitura/manipulação de strings */
 
@@ -116,36 +317,40 @@ unsigned h_div(unsigned x, unsigned i, unsigned B){
 }
 
 // Inserir - Hash FECHADO
-int insert_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+int insert_hash_div(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
+    table->stats_array[index][1] = h_div(key, 0, table->size_hash);
 
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_div(key, i, size);
-        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+    for(unsigned i = 0; i < table->size_hash; i++){
+        unsigned key_hash = h_div(key, i, table->size_hash);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
 
+        // caso houvesse remoção o codigo '#####' indicaria elemento removido
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
-            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
         (*n_colision)++;
+        table->stats_array[index][0]++;
     }
     return 1;
 }
 
 // Buscar - Hash FECHADO
-int search_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+int search_hash_div(HASH_FC *table, string element, unsigned *n_found){
     unsigned key = converter(element);
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_div(key, i, size);
+    for(unsigned i = 0; i < table->size_hash; i++){
+        unsigned key_hash = h_div(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
         if(table->data_array[key_hash] == NULL){
             // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
             return -1;
         }
 
-        if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+        // caso houvesse remoção o codigo '#####' indicaria elemento removido
+        if((strcmp(table->data_array[key_hash], element) == 0)){
+            // printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
             (*n_found)++;
             return 0;
         }
@@ -158,7 +363,7 @@ int search_hash_div(HASH_FC *table, string element, unsigned size, unsigned *n_f
 int insert_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_div(key, 0, size);
-    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+    // printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
 
     if(table->data_array[key_hash] == NULL){
         table->data_array[key_hash] = new_list();
@@ -176,16 +381,16 @@ int insert_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned
 int search_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_found){
     unsigned key = converter(element);
     unsigned key_hash = h_div(key, 0, size);
-    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+    // printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
 
     LISTA *curr_list = table->data_array[key_hash];
     if(curr_list == NULL){
-        printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
+        // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
         return -1;
     }
 
     if((search_list(curr_list, element) == 0)){
-        printf("O elemento %s foi encontrado com sucesso!!!\n", element);
+        // printf("O elemento %s foi encontrado com sucesso!!!\n", element);
         (*n_found)++;
         return 0;
     }
@@ -203,28 +408,31 @@ unsigned h_mul(unsigned x, unsigned i, unsigned B){
 
 
 // Inserir - Hash FECHADO
-int insert_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+int insert_hash_mul(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
+    table->stats_array[index][1] = h_mul(key, 0, table->size_hash);
 
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_mul(key, i, size);
-        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+    for(unsigned i = 0; i < table->size_hash; i++){
+        unsigned key_hash = h_mul(key, i, table->size_hash);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
 
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
-            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
         (*n_colision)++;
+        table->stats_array[index][0]++;
     }
     return 1;
 }
 
 // Buscar - Hash FECHADO
-int search_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+int search_hash_mul(HASH_FC *table, string element, unsigned *n_found){
     unsigned key = converter(element);
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = h_mul(key, i, size);
+    
+    for(unsigned i = 0; i < table->size_hash; i++){
+        unsigned key_hash = h_mul(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
         if(table->data_array[key_hash] == NULL){
             // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
@@ -232,7 +440,7 @@ int search_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_f
         }
 
         if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+            // printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
             (*n_found)++;
             return 0;
         }
@@ -245,7 +453,7 @@ int search_hash_mul(HASH_FC *table, string element, unsigned size, unsigned *n_f
 int insert_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_mul(key, 0, size); // i = 0 -> uso de listas dispensa overflow
-    printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
+    // printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
 
     if(table->data_array[key_hash] == NULL){
         table->data_array[key_hash] = new_list();
@@ -263,7 +471,7 @@ int insert_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned
 int search_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_found){
     unsigned key = converter(element);
     unsigned key_hash = h_mul(key, 0, size);
-    printf("\t%20s\t=\t%d -> %d\n",element, key, key_hash);
+    // printf("\t%20s\t=\t%d -> %d\n",element, key, key_hash);
 
     LISTA *curr_list = table->data_array[key_hash];
     if(curr_list == NULL){
@@ -272,7 +480,7 @@ int search_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned
     }
 
     if((search_list(curr_list, element) == 0)){
-        printf("O elemento %s foi encontrado com sucesso!!!\n", element);
+        // printf("O elemento %s foi encontrado com sucesso!!!\n", element);
         (*n_found)++;
         return 0;
     }
@@ -290,28 +498,31 @@ unsigned rehash(unsigned x, unsigned i, unsigned B){
 }
 
 // Inserir - Rehash
-int insert_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_colision){
+int insert_hash_rehash(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
+    unsigned key_hash = rehash(key, 0, table->size_hash);
+    table->stats_array[index][1] = key_hash;
 
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = rehash(key, i, size);
-        printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+    for(unsigned i = 0; i < table->size_hash; i++){
+        key_hash = rehash(key, i, table->size_hash);
+        // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
 
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
-            printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
+            // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
         (*n_colision)++;
+        table->stats_array[index][0]++;
     }
     return 1;
 }
 
 // Buscar - Rehash
-int search_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *n_found){
+int search_hash_rehash(HASH_FC *table, string element, unsigned *n_found){
     unsigned key = converter(element);
-    for(unsigned i = 0; i < size; i++){
-        unsigned key_hash = rehash(key, i, size);
+    for(unsigned i = 0; i < table->size_hash; i++){
+        unsigned key_hash = rehash(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
         if(table->data_array[key_hash] == NULL){
             // printf("O elemento %s NAO EXISTE na tabela!!!\n", element);
@@ -319,7 +530,7 @@ int search_hash_rehash(HASH_FC *table, string element, unsigned size, unsigned *
         }
 
         if((strcmp(table->data_array[key_hash], element) == 0) || strcmp(table->data_array[key_hash], "#####") == 0){
-            printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
+            // printf("O elemento %s foi encontrado com sucesso!!!\n", table->data_array[key_hash]);
             (*n_found)++;
             return 0;
         }
