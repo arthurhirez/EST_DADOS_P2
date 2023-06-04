@@ -1,109 +1,76 @@
 #include "Tools.h"
 
-/*
-causality x2
-freed x2
-eatable x1
-*/
+// Definição do tipo booleano
+unsigned char typedef bool;
+#define TRUE  1
+#define FALSE 0
+
+// Uso de struct simula elemento com mais dados e com busca feita por chave primaria
+typedef struct{
+    int key;
+    int count;
+} element;
+
+// Funcao de ler as entradas e armazenar em structs
+element* ler_entrada(const char *arquivo, const int n){
+    FILE* f = fopen(arquivo, "r");
+    element *lista_elem = (element*) malloc(sizeof(element) * n);
+
+    for (int i = 0; !feof(f); i++){
+        fscanf(f, "%d\n", &lista_elem[i].key);
+        lista_elem[i].count = 0;
+    }
+
+    fclose(f);
+    return lista_elem;
+}
+
+// Funcao de ler elementos buscados e armazenar como lista
+int* ler_consulta(const char * arquivo, const int n){
+    FILE* f = fopen(arquivo, "r");
+
+    int *inteiros = (int*) malloc(sizeof(int) * n);
+
+    for (int i = 0; !feof(f); i++)
+        fscanf(f, "%d\n", &inteiros[i]);
+
+    fclose(f);
+    return inteiros;
+}
+
+
+// Busca sequencial
+void busca_sequencial(element *input_list, int n, int target, unsigned *n_finds){
+    for (int i = 0; i < n; i++){
+        if(input_list[i].key == target){
+            input_list[i].count++;
+            (*n_finds)++;
+            break;
+        }
+    }
+}
+
 
 int main(int argc, char const *argv[])
 {
+    const int N = 50000;
+    unsigned n_finds = 0;
 
-    // unsigned N = 10;
-    // unsigned M = 20;
-    // unsigned B = 20;
-    // string* insercoes = ler_strings("str_entrada_teste.txt", N);
-    // string* consultas = ler_strings("str_busca_teste.txt", M);
+    element* entradas = ler_entrada("inteiros_entrada.txt", N);
+    int* consultas = ler_consulta("inteiros_busca.txt", N);
 
-    unsigned N = 50000;
-    unsigned M = 70000;
-    unsigned B = 150001;
-    string* insercoes = ler_strings("strings_entrada.txt", N);
-    string* consultas = ler_strings("strings_busca.txt", M);
-    
-    unsigned colisoes_h_div = 0;
-    unsigned colisoes_h_mul = 0;
-
-    unsigned encontrados_h_div = 0;
-    unsigned encontrados_h_mul = 0;
-
-
-
-    // cria tabela hash com hash por divisão
-    HASH_FC *table;
-    table = create_table(B, N);
-
-    // for (size_t i = 0; i < 10; i++){
-    //     printf("%s\n", insercoes[i]);
-    // }
-    
-    // inserção dos dados na tabela hash usando hash por divisão
-    int count_flag = 0;
+    // realiza busca sequencial
     inicia_tempo();
-    for (int i = 0; i < N; i++) {
-        count_flag += insert_hash_div(table, insercoes[i], i, &colisoes_h_div);    
+    for (int i = 0; i < N; i++){
+        busca_sequencial(entradas, N, consultas[i], &n_finds);
     }
-    double tempo_insercao_h_div = finaliza_tempo();
+    double tempo_busca = finaliza_tempo();
 
-    printf("\nINSERIDOS DIVISAO -> %d\n", N - count_flag);
+    printf("Tempo de busca    :\t%fs\n", tempo_busca);   
+    printf("Total de numeros encontrados: %d\n", n_finds);
 
-    printf("BUSCA:\n");
-    // consulta dos dados na tabela hash usando hash por divisão
-    inicia_tempo();
-    for (int i = 0; i < M; i++) {
-        search_hash_div(table, consultas[i], &encontrados_h_div);
-    }
-    double tempo_busca_h_div = finaliza_tempo();
-
-    // limpa a tabela hash com hash por divisão
-    show_stats(table, insercoes);
-    create_csv(table, "divisao", "overflow_div");
-    delete_table(&table);
-    
-    table = create_table(B, N);
-    // cria tabela hash com hash por divisão
-
-
-    count_flag = 0;
-    // inserção dos dados na tabela hash usando hash por multiplicação
-    inicia_tempo();
-    for (int i = 0; i < N; i++) {
-        count_flag += insert_hash_mul(table, insercoes[i], i, &colisoes_h_mul);  
-    }
-    double tempo_insercao_h_mul = finaliza_tempo();
-
-    printf("\nINSERIDOS MULTIPLICACAO -> %d\n", N - count_flag);
-
-    // busca dos dados na tabela hash com hash por multiplicação
-    inicia_tempo();
-    for (int i = 0; i < M; i++) {
-        search_hash_mul(table, consultas[i], &encontrados_h_mul);
-    }
-    double tempo_busca_h_mul = finaliza_tempo();
-
-    // limpa a tabela hash com hash por multiplicação
-    show_stats(table, insercoes);
-    create_csv(table, "divisao", "overflow_mult");
-    delete_table(&table);
-
-    delete_strings(&insercoes, N);
-    delete_strings(&consultas, M);
-
-
-    printf("Hash por Divisão\n");
-    printf("Colisões na inserção: %d\n", colisoes_h_div);
-    printf("Tempo de inserção   : %fs\n", tempo_insercao_h_div);
-    printf("Tempo de busca      : %fs\n", tempo_busca_h_div);
-    printf("Itens encontrados   : %d\n", encontrados_h_div);
-    printf("\n");
-    printf("Hash por Multiplicação\n");
-    printf("Colisões na inserção: %d\n", colisoes_h_mul);
-    printf("Tempo de inserção   : %fs\n", tempo_insercao_h_mul);
-    printf("Tempo de busca      : %fs\n", tempo_busca_h_mul);
-    printf("Itens encontrados   : %d\n", encontrados_h_mul);
-
-    csv_time("overflow", tempo_insercao_h_div, tempo_busca_h_div);
-    csv_time("overflow", tempo_insercao_h_mul, tempo_busca_h_mul);
+    free(entradas);
+    free(consultas);
 
     return 0;
 }

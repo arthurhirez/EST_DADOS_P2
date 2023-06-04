@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 // Definição das variaveis que controlam a medição de tempo
 clock_t _ini, _fim;
@@ -10,59 +11,83 @@ unsigned char typedef bool;
 #define TRUE  1
 #define FALSE 0
 
-void busca_sequencial(int *int_entrada, int n, int buscado, int *encontrados){
-    for (int i = 0; i < n; i++){
-        
+// Uso de struct simula elemento com mais dados e com busca feita por chave primaria
+typedef struct{
+    int key;
+    int count;
+} element;
+
+// Funcao de ler as entradas e armazenar em structs
+element* ler_entrada(const char *arquivo, const int n){
+    FILE* f = fopen(arquivo, "r");
+    element *lista_elem = (element*) malloc(sizeof(element) * n);
+
+    for (int i = 0; !feof(f); i++){
+        fscanf(f, "%d\n", &lista_elem[i].key);
+        lista_elem[i].count = 0;
     }
 
+    fclose(f);
+    return lista_elem;
 }
 
-
-
-
-int* ler_inteiros(const char * arquivo, const int n)
-{
+// Funcao de ler elementos buscados e armazenar como lista
+int* ler_consulta(const char * arquivo, const int n){
     FILE* f = fopen(arquivo, "r");
 
-    int * inteiros = (int *) malloc(sizeof(int) * n);
+    int *inteiros = (int*) malloc(sizeof(int) * n);
 
     for (int i = 0; !feof(f); i++)
         fscanf(f, "%d\n", &inteiros[i]);
 
     fclose(f);
-
     return inteiros;
 }
 
-void inicia_tempo()
-{
+// Funcao de inicializar contagem de tempo
+void inicia_tempo(){
     srand(time(NULL));
     _ini = clock();
 }
 
-double finaliza_tempo()
-{
+// Funcao de retornar tempo decorrido na medicao
+double finaliza_tempo(){
     _fim = clock();
     return ((double) (_fim - _ini)) / CLOCKS_PER_SEC;
 }
 
+// Busca sequencial
+void busca_sequencial(element *input_list, int n, int target, unsigned *n_finds){
+    for (int i = 0; i < n; i++){
+        if(input_list[i].key == target){
+            input_list[i].count++;
+            (*n_finds)++;
+            break;
+        }
+    }
+}
+
+
 int main(int argc, char const *argv[])
 {
     const int N = 50000;
-    unsigned encontrados = 0;
+    unsigned n_finds = 0;
 
-    int* entradas = ler_inteiros("inteiros_entrada.txt", N);
-    int* consultas = ler_inteiros("inteiros_busca.txt", N);
+    element* entradas = ler_entrada("inteiros_entrada.txt", N);
+    int* consultas = ler_consulta("inteiros_busca.txt", N);
 
     // realiza busca sequencial
     inicia_tempo();
-    for (int i = 0; i < N; i++) {
-        // buscar o elemento consultas[i] na entrada
+    for (int i = 0; i < N; i++){
+        busca_sequencial(entradas, N, consultas[i], &n_finds);
     }
     double tempo_busca = finaliza_tempo();
 
-    printf("Tempo de busca    :\t%fs\n", tempo_busca);
-    printf("Itens encontrados :\t%d\n", encontrados);
+    printf("Tempo de busca    :\t%fs\n", tempo_busca);   
+    printf("Total de numeros encontrados: %d\n", n_finds);
+
+    free(entradas);
+    free(consultas);
 
     return 0;
 }
