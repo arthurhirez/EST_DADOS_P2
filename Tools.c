@@ -261,6 +261,36 @@ void create_csv(HASH_FC *table, char *alg_name, char *type_hash){
     str_aux = NULL;
 }
 
+
+/* Funcao de armazenar resultados em arquivo csv */
+void csv_time(char *type_hash, float time_insert, float time_search){
+    FILE *file_p;
+
+    // Nome do arquivo
+    char *file_suffix = "report_time_";
+    int aux_len = strlen(file_suffix) + strlen(type_hash) + 5;
+    char *str_aux = malloc(aux_len * sizeof(char));
+    strcpy(str_aux, file_suffix);
+    strcat(str_aux, type_hash);
+    strcat(str_aux, ".csv");
+
+
+    // Abre o arquivo
+    file_p = fopen(str_aux, "a");
+    // fprintf(file_p, "Resultados hash por multiplicacao");
+    if (file_p == NULL) {
+        fprintf(stderr, "\nErro ao abrir o arquivo\n");
+        exit(1);
+    }
+
+    fprintf(file_p, "%f;%f\n", time_insert, time_search);
+
+    // Fecha arquivo
+    fclose(file_p);
+    free(str_aux);
+    str_aux = NULL;
+}
+
 void delete_stats(int ***array){
     for(int i = 0; i < 4; i++){
         free((*array)[i]);
@@ -319,20 +349,26 @@ unsigned h_div(unsigned x, unsigned i, unsigned B){
 // Inserir - Hash FECHADO
 int insert_hash_div(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
-    table->stats_array[index][1] = h_div(key, 0, table->size_hash);
+    unsigned flag_colision = 0;
 
     for(unsigned i = 0; i < table->size_hash; i++){
         unsigned key_hash = h_div(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
 
+        // Chave repetida -> não é feita inserção e não conta como colisão
+        if(table->data_array[key_hash] != NULL && strcmp(table->data_array[key_hash], element) == 0) return 1;
+
         // caso houvesse remoção o codigo '#####' indicaria elemento removido
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
+            table->stats_array[index][1] = h_div(key, 0, table->size_hash);
+            (*n_colision) += flag_colision;
+            table->stats_array[index][0] = flag_colision;
             // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
-        (*n_colision)++;
-        table->stats_array[index][0]++;
+
+        flag_colision++;
     }
     return 1;
 }
@@ -363,6 +399,10 @@ int search_hash_div(HASH_FC *table, string element, unsigned *n_found){
 int insert_hash_div_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_div(key, 0, size);
+
+    // Chave repetida -> não é feita inserção e não conta como colisão
+    if((search_list(table->data_array[key_hash], element) == 0)) return 1;
+
     // printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
 
     if(table->data_array[key_hash] == NULL){
@@ -410,19 +450,26 @@ unsigned h_mul(unsigned x, unsigned i, unsigned B){
 // Inserir - Hash FECHADO
 int insert_hash_mul(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
-    table->stats_array[index][1] = h_mul(key, 0, table->size_hash);
+    unsigned flag_colision = 0;
 
     for(unsigned i = 0; i < table->size_hash; i++){
         unsigned key_hash = h_mul(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
 
+        // Chave repetida -> não é feita inserção e não conta como colisão
+        if(table->data_array[key_hash] != NULL && strcmp(table->data_array[key_hash], element) == 0) return 1;
+
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
+            table->stats_array[index][1] = h_mul(key, 0, table->size_hash);
+            (*n_colision) += flag_colision;
+            table->stats_array[index][0] = flag_colision;
             // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
-        (*n_colision)++;
-        table->stats_array[index][0]++;
+
+        flag_colision++;
+        
     }
     return 1;
 }
@@ -453,6 +500,12 @@ int search_hash_mul(HASH_FC *table, string element, unsigned *n_found){
 int insert_hash_mul_open(HASH_AB *table, string element, unsigned size, unsigned *n_colision){
     unsigned key = converter(element);
     unsigned key_hash = h_mul(key, 0, size); // i = 0 -> uso de listas dispensa overflow
+
+
+    // Chave repetida -> não é feita inserção e não conta como colisão
+    if((search_list(table->data_array[key_hash], element) == 0)) return 1;
+
+
     // printf("%20s\t=\t%d -> %d\n", element, key, key_hash);
 
     if(table->data_array[key_hash] == NULL){
@@ -500,20 +553,26 @@ unsigned rehash(unsigned x, unsigned i, unsigned B){
 // Inserir - Rehash
 int insert_hash_rehash(HASH_FC *table, string element, unsigned index, unsigned *n_colision){
     unsigned key = converter(element);
-    unsigned key_hash = rehash(key, 0, table->size_hash);
-    table->stats_array[index][1] = key_hash;
+    unsigned flag_colision = 0;
 
     for(unsigned i = 0; i < table->size_hash; i++){
-        key_hash = rehash(key, i, table->size_hash);
+        unsigned key_hash = rehash(key, i, table->size_hash);
         // printf("[%d]:\t%20s\t=\t%d -> %d\n", i, element, key, key_hash);
+
+        // Chave repetida -> não é feita inserção e não conta como colisão
+        if(table->data_array[key_hash] != NULL && strcmp(table->data_array[key_hash], element) == 0) return 1;
 
         if(table->data_array[key_hash] == NULL || strcmp(table->data_array[key_hash], "#####") == 0){
             table->data_array[key_hash] = element;
+            table->stats_array[index][0] = flag_colision;
+            table->stats_array[index][1] = rehash(key, 0, table->size_hash);
+            (*n_colision) += flag_colision;
             // printf("O elemento %s foi inserido com sucesso!!!\n", table->data_array[key_hash]);
             return 0;
         }
-        (*n_colision)++;
-        table->stats_array[index][0]++;
+
+        flag_colision++;
+        
     }
     return 1;
 }

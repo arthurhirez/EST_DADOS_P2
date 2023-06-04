@@ -19,6 +19,7 @@ typedef struct hash_st_open HASH_AB;
 
 void create_csv(HASH_FC *table, char *alg_name, char *type_hash);
 void create_csv_open(int **array, char *alg_name);
+void csv_time(char *type_hash, float time_insert, float time_search);
 
 HASH_FC *create_table(unsigned size_hash, unsigned size_input);
 void delete_table(HASH_FC **table);

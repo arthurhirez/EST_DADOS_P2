@@ -5,17 +5,17 @@
 
 
 int main(int argc, char const *argv[]){
-    unsigned N = 10;
-    unsigned M = 20;
-    unsigned B = 20;
-    string* insercoes = ler_strings("str_entrada_teste.txt", N);
-    string* consultas = ler_strings("str_busca_teste.txt", M);
+    // unsigned N = 10;
+    // unsigned M = 20;
+    // unsigned B = 20;
+    // string* insercoes = ler_strings("str_entrada_teste.txt", N);
+    // string* consultas = ler_strings("str_busca_teste.txt", M);
 
-    // unsigned N = 50000;
-    // unsigned M = 70000;
-    // unsigned B = 150001;
-    // string* insercoes = ler_strings("strings_entrada.txt", N);
-    // string* consultas = ler_strings("strings_busca.txt", M);
+    unsigned N = 50000;
+    unsigned M = 70000;
+    unsigned B = 150001;
+    string* insercoes = ler_strings("strings_entrada.txt", N);
+    string* consultas = ler_strings("strings_busca.txt", M);
     
     unsigned colisoes = 0;
     unsigned encontrados = 0;
@@ -28,13 +28,16 @@ int main(int argc, char const *argv[]){
     //     printf("%s\n", insercoes[i]);
     // }
 
+
+    int count_flag = 0;
     // inserção dos dados na tabela hash
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_rehash(table, insercoes[i], i, &colisoes);
+        count_flag += insert_hash_rehash(table, insercoes[i], i, &colisoes);
     }
     double tempo_insercao = finaliza_tempo();
 
+    printf("\nINSERIDOS REHASH -> %d\n", N - count_flag);
     // busca dos dados na tabela hash
     inicia_tempo();
     for (int i = 0; i < M; i++) {
@@ -54,6 +57,8 @@ int main(int argc, char const *argv[]){
     printf("Tempo de inserção   : %fs\n", tempo_insercao);
     printf("Tempo de busca      : %fs\n", tempo_busca);
     printf("Itens encontrados   : %d\n", encontrados);
+
+    // csv_time("rehash", tempo_insercao, tempo_busca);
 
     return 0;
 }

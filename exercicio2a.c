@@ -38,14 +38,16 @@ int main(int argc, char const *argv[])
     // }
     
     // inserção dos dados na tabela hash usando hash por divisão
+    int count_flag = 0;
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_div(table, insercoes[i], i, &colisoes_h_div);    
+        count_flag += insert_hash_div(table, insercoes[i], i, &colisoes_h_div);    
     }
     double tempo_insercao_h_div = finaliza_tempo();
 
-    printf("\nBUSCA:\n");
+    printf("\nINSERIDOS DIVISAO -> %d\n", N - count_flag);
 
+    printf("BUSCA:\n");
     // consulta dos dados na tabela hash usando hash por divisão
     inicia_tempo();
     for (int i = 0; i < M; i++) {
@@ -61,12 +63,16 @@ int main(int argc, char const *argv[])
     table = create_table(B, N);
     // cria tabela hash com hash por divisão
 
+
+    count_flag = 0;
     // inserção dos dados na tabela hash usando hash por multiplicação
     inicia_tempo();
     for (int i = 0; i < N; i++) {
-        insert_hash_mul(table, insercoes[i], i, &colisoes_h_mul);  
+        count_flag += insert_hash_mul(table, insercoes[i], i, &colisoes_h_mul);  
     }
     double tempo_insercao_h_mul = finaliza_tempo();
+
+    printf("\nINSERIDOS MULTIPLICACAO -> %d\n", N - count_flag);
 
     // busca dos dados na tabela hash com hash por multiplicação
     inicia_tempo();
@@ -95,6 +101,9 @@ int main(int argc, char const *argv[])
     printf("Tempo de inserção   : %fs\n", tempo_insercao_h_mul);
     printf("Tempo de busca      : %fs\n", tempo_busca_h_mul);
     printf("Itens encontrados   : %d\n", encontrados_h_mul);
+
+    // csv_time("overflow", tempo_insercao_h_div, tempo_busca_h_div);
+    // csv_time("overflow", tempo_insercao_h_mul, tempo_busca_h_mul);
 
     return 0;
 }
