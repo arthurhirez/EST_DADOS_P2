@@ -4,6 +4,10 @@ BINARY = bin_proj
 
 all:
 	gcc -Wall -Werror -g $(UTIL) $(MAIN) -o $(BINARY) -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio1a.c -o bin1a -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio1b.c -o bin1b -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio1c.c -o bin1c -lm
+	gcc -Wall -Werror -g $(UTIL) exercicio1d.c -o bin1d -lm
 	gcc -Wall -Werror -g $(UTIL) exercicio2a.c -o bin2a -lm
 	gcc -Wall -Werror -g $(UTIL) exercicio2b.c -o bin2b -lm
 	gcc -Wall -Werror -g $(UTIL) exercicio2c.c -o bin2c -lm
